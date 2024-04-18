@@ -1,5 +1,8 @@
 # Import the dependencies.
 from flask import Flask, jsonify
+from datetime import datetime
+import datetime as dt 
+import numpy as np
 
 
 #################################################
@@ -94,29 +97,76 @@ def tobs(start):
         })
 
     return jsonify(temp_data)
+from flask import request
 
 @app.route("/api/v1.0/<start>")
-#@app.route("/api/v1.0/<start>")
-def first(start):
-    # Create our session (link) from Python to the DB
-    session = Session(engine)
-    dt.datetime.strptime()
-    
+def temp_stats_start(start):
+    # Convert the start date string to a datetime object
+    start_date = dt.datetime.strptime(start, "%Y-%m-%d").date()
 
-   
-    # Query all stations
+    # Query the database to calculate TMIN, TAVG, and TMAX for dates greater than or equal to the start date
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).all()
 
-    results =  session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)) \
-                                    .filter() \
-                                    .all()
+    # Prepare the JSON response
+    temp_data = []
+    for min_temp, avg_temp, max_temp in results:
+        temp_data.append({
+            "Minimum Temperature": min_temp,
+            "Average Temperature": avg_temp,
+            "Maximum Temperature": max_temp
+        })
+
+    return jsonify(temp_data)
+
+@app.route("/api/v1.0/<start>/<end>")
+def temp_stats_end(start, end):
+    # Convert the start date string to a datetime object
+    start_date = dt.datetime.strptime(start, "%Y-%m-%d").date()
+     # Convert the start date string to a datetime object
+    end_date = dt.datetime.strptime(end, "%Y-%m-%d").date()
+
+    # Query the database to calculate TMIN, TAVG, and TMAX for dates greater than or equal to the start date
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
+        
+
+    # Prepare the JSON response
+    temp_data = []
+    for min_temp, avg_temp, max_temp in results:
+        temp_data.append({
+            "Minimum Temperature": min_temp,
+            "Average Temperature": avg_temp,
+            "Maximum Temperature": max_temp
+        })
+
+    return jsonify(temp_data)
 
 
-    session.close()
+@app.route("/api/v1.0/<start>/<end>")
+def temp_stats_range(start, end):
+    # Convert the start and end date strings to datetime objects
+    start_date = dt.datetime.strptime(start, "%Y-%m-%d").date()
+    end_date = dt.datetime.strptime(end, "%Y-%m-%d").date()
 
-    # Convert list of tuples into normal list
-    stations = list(np.ravel(results))
+    # Query the database to calculate TMIN, TAVG, and TMAX for the specified date range
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
 
-    return jsonify(stations)
+    # Prepare the JSON response
+    temp_data = []
+    for min_temp, avg_temp, max_temp in results:
+        temp_data.append({
+            "Minimum Temperature": min_temp,
+            "Average Temperature": avg_temp,
+            "Maximum Temperature": max_temp
+        })
+
+    return jsonify(temp_data)
+
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
